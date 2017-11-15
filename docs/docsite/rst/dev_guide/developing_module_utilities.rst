@@ -24,6 +24,7 @@ The following is a list of module_utils files and a general description. The mod
 - f5.py - Helper functions for modules working with F5 networking devices.
 - facts.py - Helper functions for modules that return facts.
 - gce.py - Definitions and helper functions for modules that work with Google Compute Engine resources.
+- icinga2_api.py - Wrapper class for the icinga2 API
 - ios.py - Definitions and helper functions for modules that manage Cisco IOS networking devices
 - iosxr.py - Definitions and helper functions for modules that manage Cisco IOS-XR networking devices
 - ismount.py - Contains single helper function that fixes os.path.ismount
