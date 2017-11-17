@@ -13,43 +13,35 @@ ANSIBLE_METADATA = {
 DOCUMENTATION = '''
 ---
 module: icinga2_hostgroup
-
 short_description: Manage icinga2 hostgroup over API
-
-version_added: "2.4"
-
 description:
     - Manages hostgroups in icinga2 via API.
-
-requirements:
-    - "requests >= 2.18"
-
-options:
-    object_name:
-        description:
-            - The object name of the hostgroup, that should be created 
-        required: true
-    display_name:
-        description:
-            - A short description of the host group
-    groups:
-        description:
-            - An array of nested group names
-    state:
-        description:
-            - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
-              the hostgroup will be removed, if existent
-        choices: [ absent, present ]
-        required: true
-    cascade_remove:
-        description:
-            - When you remove a hostgroup, delete all depending objects, too ()
-
-extends_documentation_fragment:
-    - icinga2
-
+version_added: "2.4"
 author:
-    - Wolfgang Felbermeier (@f3lang)
+  - Wolfgang Felbermeier, @f3lang
+requirements: [ "requests" ]
+options:
+  object_name:
+    description:
+      - The object name of the hostgroup, that should be created 
+    required: true
+  display_name:
+    description:
+      - A short description of the host group
+  groups:
+    description:
+      - An array of nested group names
+  state:
+    description:
+      - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
+        the hostgroup will be removed, if existent
+    choices: [ "absent", "present" ]
+    required: true
+  cascade_remove:
+    description:
+      - When you remove a hostgroup, delete all depending objects, too 
+extends_documentation_fragment:
+  - icinga2
 '''
 
 EXAMPLES = '''
@@ -77,74 +69,134 @@ EXAMPLES = '''
 '''
 
 RETURN = '''
-original_message:
-    description: The original name param that was passed in
-    type: str
-message:
-    description: The output message that the sample module generates
+status:
+    description: The HTTP status of the icinga2 API reply
+    type: int
+results:
+    description: The results returned by the icinga2 API. If you queried the API, contains an array with all available hostgroups
+    type: complex
+    contains:
+        attrs:
+            description: The attributes of the hostgroup
+            type: complex
+            contains:
+                action_url:
+                    description: URL for actions for the host (for example, an external graphing tool) 
+                    type: string
+                display_name:
+                    description: A short description of the host group.
+                    type: string
+                groups:
+                    description: An array of nested group names.
+                    type: list
+                ha_mode:
+                    description: 
+                    type: int
+                name:
+                    description: The name of the hostgroup
+                    type: string
+                notes:
+                    description: Notes for the host
+                    type: string
+                notes_url:
+                    description: URL for notes for the host (for example, in notification commands)
+                    type: string
+                original_attributes:
+                    description: Original values of object attributes modified at runtime
+                    type: complex
+                package:
+                    description: Configuration package name this object belongs to. Local configuration is set to _etc, runtime created objects use _api
+                    type: string
+                paused:
+                    description: Object has been paused at runtime (e.g. IdoMysqlConnection. Defaults to false
+                    type: boolean
+                source_location:
+                    description: Location information where the configuration files are stored
+                    type: complex
+                    contains:
+                        first_column:
+                            type: int
+                        first_line:
+                            type: int
+                        last_column:
+                            type: int
+                        last_line:
+                            type: int
+                        path:
+                            description: The path of the configuration file
+                            type: string
+                templates:
+                    description: Templates imported on object compilation
+                    type: list
+                type:
+                    description: The type of the element. In this case "HostGroup"
+                vars:
+                    description: A dictionary containing custom attributes that are available globally
+                    type: complex
+                version:
+                    description: Timestamp when the object was created or modified. Synced throughout cluster nodes
+                    type: int
+                zone:
+                    description: Optional. The zone this object is a member of. Please read the distributed monitoring chapter (U(https://www.icinga.com/docs/icinga2/latest/doc/06-distributed-monitoring/#distributed-monitoring))for details
+                    type: string
+        joins:
+            description: Icinga 2 knows about object relations. For example it can optionally return information about the host when querying service objects
+            type: complex
+        meta:
+            description: Enable meta information using ?meta=used_by (references from other objects) and/or ?meta=location (location information) specified as list. Defaults to disabled
+            type: complex
+        name:
+            description: The name of the hostgroup
+            type: string
+        type:
+            description: The type of the element. In this case "HostGroup"
+            type: string
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.icinga2_api import Icinga2APIClient, icinga2_common_argument_spec, \
-    icinga2_filter_argument_spec, icinga2_options_argument_spec
+from ansible.module_utils.icinga2_api import icinga2_common_argument_spec, \
+    icinga2_filter_argument_spec, icinga2_options_argument_spec, create_icinga2_api_client
 
 
 def run_module():
-
     module_args = dict(
-            object_name=dict(type='str', required=True),
-            display_name=dict(type='str', required=False),
-            groups=dict(type='list', required=False, default=[]),
-            state=dict(type='str', required=True, choices=['present', 'absent'])
+        object_name=dict(type='str', required=True),
+        display_name=dict(type='str', required=False),
+        groups=dict(type='list', required=False, default=[]),
+        state=dict(type='str', required=True, choices=['present', 'absent'])
     )
     module_args.update(icinga2_filter_argument_spec())
     module_args.update(icinga2_options_argument_spec())
     module_args.update(icinga2_common_argument_spec())
 
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # change is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
     result = dict(
         status=0,
-        original_message='',
-        message=''
+        results=dict()
     )
 
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=False
     )
 
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
-    if module.check_mode:
-        return result
+    connection = create_icinga2_api_client(module)
+    if module.params['state'] == 'present':
+        attrs = dict(
+            display_name=module.params['display_name'],
+            groups=module.params['groups']
+        )
+        attrs = dict((k, v) for k, v in attrs.iteritems() if v)
+        api_result = connection.create_object(object_class='hostgroups', object_name=module.params['object_name'],
+                                              attrs=attrs)
+        if api_result.code == 200:
+            api_result = connection.get_object('hostgroups', module.params['object_name'])
+    else:
+        api_result = connection.delete_object('hostgroups', module.params['object_name'])
 
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
-    result['original_message'] = module.params['name']
-    result['message'] = 'goodbye'
+    result['status'] = api_result.code
+    result['results'] = api_result.results
+    result['changed'] = True
 
-    # use whatever logic you need to determine whether or not this module
-    # made any modifications to your target
-    if module.params['new']:
-        result['changed'] = True
-
-    # during the execution of the module, if there is an exception or a
-    # conditional state that effectively causes a failure, run
-    # AnsibleModule.fail_json() to pass in the message and the result
-    if module.params['name'] == 'fail me':
-        module.fail_json(msg='You requested this to fail', **result)
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
 

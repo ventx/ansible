@@ -17,9 +17,23 @@
 # (c) 2017 Wolfgang Felbermeier (@f3lang)
 #
 
-import requests
+try:
+    import requests
+    from requests.auth import HTTPBasicAuth
+
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
+
+try:
+    import urllib3
+
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    UNSECURE_HTTPS_ALLOWED = True
+except:
+    UNSECURE_HTTPS_ALLOWED = False
+
 import json
-from requests.auth import HTTPBasicAuth
 from argparse import ArgumentError
 
 
@@ -51,14 +65,20 @@ class Icinga2APIClassError(Exception):
 
 class Icinga2Object:
     def __init__(self, response_data, status_code):
-        if (len(response_data) == 1) & ("code" in response_data.results[0]):
-            self.code = response_data.results[0].code
-            self.status = response_data.results[0].status
+        blabb = {
+            "banana": "rama"
+        }
+        if (len(response_data["results"]) == 1) & ("code" in response_data["results"][0]):
+            self.code = response_data["results"][0]["code"]
+            self.results = response_data["results"][0]["status"]
         else:
             self.code = status_code
-            self.results = response_data.results
+            self.results = response_data["results"]
 
 
+#
+# The Icinga2APIClient is a generic API Wrapper for the Icinga2 API.
+#
 class Icinga2APIClient:
     def __init__(self, url="https://127.0.0.1:5665/v1", username="", password="", cert_path="", cert_key_path="",
                  ignore_server_cert_errors=False):
@@ -81,11 +101,10 @@ class Icinga2APIClient:
             url += Icinga2APIClient.create_simple_filter_url(filter)
         payload = Icinga2APIClient.create_payload(attrs, templates, advanced_filter, advanced_filter_vars)
         try:
-            self.get_object(object_name)
-            result = self.make_api_request(url, "post", payload)
+            self.get_object(object_class, object_name)
+            return self.make_api_request(url, "post", payload)
         except Icinga2APINotFoundError:
-            result = self.make_api_request(url, "put", payload)
-        return result
+            return self.make_api_request(url, "put", payload)
 
     def get_object(self, object_class, object_name=None, filter=None, advanced_filter=None, advanced_filter_vars=None):
         url = "objects/" + object_class + (("/" + object_name) if object_name is not None else "")
@@ -104,7 +123,10 @@ class Icinga2APIClient:
         payload = None
         if advanced_filter is not None:
             payload = Icinga2APIClient.create_payload(None, None, advanced_filter, advanced_filter_vars)
-        return self.make_api_request(url, "delete", payload)
+        try:
+            return self.make_api_request(url, "delete", payload)
+        except Icinga2APINotFoundError:
+            return Icinga2Object({'results': 'Item already removed'}, 200)
 
     def make_api_request(self, path, request_type, payload=None):
         headers = {
@@ -123,10 +145,10 @@ class Icinga2APIClient:
                                       verify=not self.ignore_server_cert_errors))
                 else:
                     return Icinga2APIClient.handle_api_response(
-                        requests.post(self.url + "/" + path,
-                                      headers=headers,
-                                      auth=basic_auth,
-                                      verify=not self.ignore_server_cert_errors))
+                        requests.get(self.url + "/" + path,
+                                     headers=headers,
+                                     auth=basic_auth,
+                                     verify=not self.ignore_server_cert_errors))
 
             elif request_type == "put":
                 return Icinga2APIClient.handle_api_response(
@@ -161,10 +183,10 @@ class Icinga2APIClient:
                                       verify=not self.ignore_server_cert_errors))
                 else:
                     return Icinga2APIClient.handle_api_response(
-                        requests.post(self.url + "/" + path,
-                                      headers=headers,
-                                      cert=client_ca,
-                                      verify=not self.ignore_server_cert_errors))
+                        requests.get(self.url + "/" + path,
+                                     headers=headers,
+                                     cert=client_ca,
+                                     verify=not self.ignore_server_cert_errors))
             elif request_type == "put":
                 return Icinga2APIClient.handle_api_response(
                     requests.put(self.url + "/" + path,
@@ -191,9 +213,9 @@ class Icinga2APIClient:
     @staticmethod
     def handle_api_response(r):
         if r.status_code > 299:
-            Icinga2APIClient.handle_api_error(r.text)
+            Icinga2APIClient.handle_api_error(r)
         else:
-            return Icinga2Object(r.json, r.status_code)
+            return Icinga2Object(r.json(), r.status_code)
 
     @staticmethod
     def handle_api_error(r):
@@ -220,24 +242,24 @@ class Icinga2APIClient:
     def create_payload(attrs=None, templates=None, filter=None, filter_vars=None):
         payload = {}
         if attrs is not None:
-            payload.attrs = attrs
+            payload['attrs'] = attrs
         if templates is not None:
-            payload.templates = templates
+            payload['templates'] = templates
         if filter is not None:
-            payload.filter = payload
+            payload['filter'] = payload
         if filter_vars is not None:
-            payload.filter_vars = filter_vars
+            payload['filter_vars'] = filter_vars
         return payload
 
 
 def icinga2_common_argument_spec():
     return dict(
-        url=dict(type='string', required=True),
-        user=dict(type='string', required=False, default=''),
-        password=dict(type='string', required=False),
-        client_cert=dict(type='string', required=False),
-        client_cert_pem=dict(type='string', required=False),
-        server_ca=dict(type='string', required=False),
+        url=dict(type='str', required=True),
+        username=dict(type='str', required=False, default=''),
+        password=dict(type='str', required=False, no_log=True),
+        client_cert=dict(type='str', required=False),
+        client_cert_pem=dict(type='str', required=False),
+        server_ca=dict(type='str', required=False),
         ignore_server_certificate_errors=dict(type='bool', required=False, default=False)
     )
 
@@ -254,3 +276,15 @@ def icinga2_options_argument_spec():
     return dict(
         cascade_remove=dict(type='bool', required=False, default=False)
     )
+
+
+def create_icinga2_api_client(module):
+    if not HAS_REQUESTS:
+        module.fail_json(msg='requests package required for icinga2 api module')
+
+    return Icinga2APIClient(module.params['url'],
+                            module.params['username'],
+                            module.params['password'],
+                            module.params['client_cert'],
+                            module.params['client_cert_pem'],
+                            module.params['ignore_server_certificate_errors'])
