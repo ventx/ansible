@@ -12,37 +12,75 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: icinga2_hostgroup
-short_description: Manage icinga2 hostgroup over API
+module: icinga2_api_listener
+short_description: Manage icinga2 api listener endpoints over API
 description:
-    - Manages hostgroups in icinga2 via API.
+    - ApiListener objects are used for distributed monitoring setups and API usage specifying 
+      the certificate files used for ssl authorization and additional restrictions.
+      While Icinga 2 and the underlying OpenSSL library use sane and secure defaults, 
+      the attributes cipher_list and tls_protocolmin can be used to increase communication security. 
+      A good source for a more secure configuration is provided by the Mozilla Wiki 
+      (U(https://wiki.mozilla.org/Security/Server_Side_TLS)). 
+      Ensure to use the same configuration for both attributes on all endpoints to avoid 
+      communication problems which requires to use cipher_list compatible with the endpoint 
+      using the oldest version of the OpenSSL library. If using other tools to connect 
+      to the API ensure also compatibility with them as this setting affects not only 
+      inter-cluster communication but also the REST API. 
 version_added: "2.4"
 author:
   - Wolfgang Felbermeier, @f3lang
 requirements: [ "requests" ]
 options:
-  name:
-    description:
-      - The object name of the hostgroup, that should be created 
-    required: true
-  display_name:
-    description:
-      - A short description of the host group
-  groups:
-    description:
-      - An array of nested group names
-  state:
-    description:
-      - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
-        the hostgroup will be removed, if existent
-    choices: [ "absent", "present" ]
-    required: true
-  cascade_remove:
-    description:
-      - When you remove a hostgroup, delete all depending objects, too 
+  ticket_salt:
+    type: string
+    description: 'Private key for CSR auto-signing. Required for a signing master instance.'
+  crl_path:
+    type: string
+    description: 'Path to the CRL file.'
+  bind_host:
+    type: string
+    default: 0.0.0.0
+    description: 'The IP address the api listener should be bound to. Defaults to 0.0.0.0.'
+  bind_port:
+    type: int
+    default: '5665'
+    description: 'The port the api listener should be bound to. Defaults to 5665.'
+  accept_config:
+    type: bool
+    default: 'false'
+    description: 'Accept zone configuration. Defaults to false.'
+  accept_commands:
+    type: bool
+    default: 'false'
+    description: 'Accept remote commands. Defaults to false.'
+  cipher_list:
+    type: string
+    default: 'ALL:!LOW:!WEAK:!MEDIUM:!EXP:!NULL'
+    description: 'Cipher list that is allowed. For a list of available ciphers run openssl ciphers. Defaults to ALL:!LOW:!WEAK:!MEDIUM:!EXP:!NULL.'
+  tls_protocolmin:
+    type: string
+    default: TLSv1
+    description: 'Minimum TLS protocol version. Must be one of TLSv1, TLSv1.1 or TLSv1.2. Defaults to TLSv1.'
+  access_control_allow_origin:
+    type: list
+    description: 'Specifies an array of origin URLs that may access the API. U(https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS#Access-Control-Allow-Origin)'
+  access_control_allow_credentials:
+    type: bool
+    default: 'true'
+    description: 'Indicates whether or not the actual request can be made using credentials. Defaults to true. U(https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS#Access-Control-Allow-Credentials)'
+  access_control_allow_headers:
+    type: string
+    default: Authorization
+    description: 'Used in response to a preflight request to indicate which HTTP headers can be used when making the actual request. Defaults to Authorization. U(https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS#Access-Control-Allow-Headers)'
+  access_control_allow_methods:
+    type: string
+    default: 'GET, POST, PUT, DELETE'
+    description: 'Used in response to a preflight request to indicate which HTTP methods can be used when making the actual request. Defaults to GET, POST, PUT, DELETE. U(https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS#Access-Control-Allow-Methods)'
+      
 extends_documentation_fragment:
-  - icinga2
-  - icinga2_filter
+    - icinga2
+notes:
+    - "Further details here: U(https://www.icinga.com/docs/icinga2/latest/doc/09-object-types/#apilistener)"
 '''
 
 EXAMPLES = '''

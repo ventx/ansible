@@ -12,37 +12,56 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: icinga2_hostgroup
-short_description: Manage icinga2 hostgroup over API
+module: icinga2_check_command_module
+short_description: Manage icinga2 api listener endpoints over API
 description:
-    - Manages hostgroups in icinga2 via API.
+    - ApiUser objects are used for authentication against the Icinga 2 API U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-authentication).
 version_added: "2.4"
 author:
   - Wolfgang Felbermeier, @f3lang
 requirements: [ "requests" ]
 options:
-  name:
-    description:
-      - The object name of the hostgroup, that should be created 
+  host_name:
+    type: string
     required: true
-  display_name:
-    description:
-      - A short description of the host group
-  groups:
-    description:
-      - An array of nested group names
-  state:
-    description:
-      - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
-        the hostgroup will be removed, if existent
-    choices: [ "absent", "present" ]
+    description: 'The name of the host this comment belongs to.'
+  service_name:
+    type: string
+    description: 'The short name of the service this comment belongs to. If omitted, this comment object is treated as host comment.'
+  author:
+    type: string
     required: true
-  cascade_remove:
-    description:
-      - When you remove a hostgroup, delete all depending objects, too 
+    description: 'The author’s name.'
+  comment:
+    type: string
+    required: true
+    description: 'The comment text.'
+  start_time:
+    type: int
+    required: true
+    description: 'The start time as UNIX timestamp.'
+  end_time:
+    type: int
+    required: true
+    description: 'The end time as UNIX timestamp.'
+  duration:
+    type: int
+    description: 'The duration as number.'
+  entry_time:
+    type: int
+    description: 'The UNIX timestamp when this downtime was added.'
+  fixed:
+    type: bool
+    default: 'flexible. Details in the advanced topics chapter'
+    description: 'Whether the downtime is fixed (true) or flexible (false). Defaults to flexible. Details in the advanced topics chapter.'
+  triggers:
+    type: list
+    description: 'List of downtimes which should be triggered by this downtime.'
 extends_documentation_fragment:
-  - icinga2
-  - icinga2_filter
+    - icinga2
+notes:
+    - "Further details here: U(https://www.icinga.com/docs/icinga2/latest/doc/09-object-types/#apiuser)
+      Available permissions are listed here: U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-permissions)"
 '''
 
 EXAMPLES = '''

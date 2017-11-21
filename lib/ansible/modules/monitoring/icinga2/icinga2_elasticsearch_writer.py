@@ -12,37 +12,66 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: icinga2_hostgroup
-short_description: Manage icinga2 hostgroup over API
+module: icinga2_check_command_module
+short_description: Manage icinga2 api listener endpoints over API
 description:
-    - Manages hostgroups in icinga2 via API.
+    - ApiUser objects are used for authentication against the Icinga 2 API U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-authentication).
 version_added: "2.4"
 author:
   - Wolfgang Felbermeier, @f3lang
 requirements: [ "requests" ]
 options:
-  name:
-    description:
-      - The object name of the hostgroup, that should be created 
+  host:
+    type: string
     required: true
-  display_name:
-    description:
-      - A short description of the host group
-  groups:
-    description:
-      - An array of nested group names
-  state:
-    description:
-      - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
-        the hostgroup will be removed, if existent
-    choices: [ "absent", "present" ]
+    default: 127.0.0.1
+    description: 'Elasticsearch host address. Defaults to 127.0.0.1.'
+  port:
+    type: int
     required: true
-  cascade_remove:
-    description:
-      - When you remove a hostgroup, delete all depending objects, too 
+    default: '9200'
+    description: 'Elasticsearch port. Defaults to 9200.'
+  index:
+    type: string
+    required: true
+    default: icinga2
+    description: 'Elasticsearch index name. Defaults to icinga2.'
+  enable_send_perfdata:
+    type: bool
+    default: 'false'
+    description: 'Send parsed performance data metrics for check results. Defaults to false.'
+  flush_interval:
+    type: string
+    default: 10s
+    description: 'How long to buffer data points before transferring to Elasticsearch. Defaults to 10s.'
+  flush_threshold:
+    type: int
+    default: '1024'
+    description: 'How many data points to buffer before forcing a transfer to Elasticsearch. Defaults to 1024.'
+  username:
+    type: string
+    description: 'Basic auth username if Elasticsearch is hidden behind an HTTP proxy.'
+  password:
+    type: string
+    description: 'Basic auth password if Elasticsearch is hidden behind an HTTP proxy.'
+  enable_tls:
+    type: bool
+    default: 'false. Requires an HTTP proxy'
+    description: 'Whether to use a TLS stream. Defaults to false. Requires an HTTP proxy.'
+  ca_path:
+    type: string
+    description: 'Path to CA certificate to validate the remote host. Requires enable_tls set to true.'
+  cert_path:
+    type: string
+    description: 'Path to host certificate to present to the remote host for mutual verification. Requires enable_tls set to true.'
+  key_path:
+    type: string
+    description: 'Path to host key to accompany the cert_path. Requires enable_tls set to true.'
 extends_documentation_fragment:
-  - icinga2
-  - icinga2_filter
+    - icinga2
+notes:
+    - "Further details here: U(https://www.icinga.com/docs/icinga2/latest/doc/09-object-types/#apiuser)
+      Available permissions are listed here: U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-permissions)"
 '''
 
 EXAMPLES = '''

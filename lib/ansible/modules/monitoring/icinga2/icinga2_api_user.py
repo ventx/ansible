@@ -12,37 +12,30 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: icinga2_hostgroup
-short_description: Manage icinga2 hostgroup over API
+module: icinga2_api_user
+short_description: Manage icinga2 api listener endpoints over API
 description:
-    - Manages hostgroups in icinga2 via API.
+    - ApiUser objects are used for authentication against the Icinga 2 API U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-authentication).
 version_added: "2.4"
 author:
   - Wolfgang Felbermeier, @f3lang
 requirements: [ "requests" ]
 options:
-  name:
-    description:
-      - The object name of the hostgroup, that should be created 
+  password:
+    type: string
+    description: 'Password string. Note: This attribute is hidden in API responses.'
+  client_cn:
+    type: string
+    description: 'Client Common Name (CN).'
+  permissions:
+    type: list
     required: true
-  display_name:
-    description:
-      - A short description of the host group
-  groups:
-    description:
-      - An array of nested group names
-  state:
-    description:
-      - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
-        the hostgroup will be removed, if existent
-    choices: [ "absent", "present" ]
-    required: true
-  cascade_remove:
-    description:
-      - When you remove a hostgroup, delete all depending objects, too 
+    description: 'Array of permissions. Either as string or dictionary with the keys permission and filter. The latter must be specified as function.'
 extends_documentation_fragment:
-  - icinga2
-  - icinga2_filter
+    - icinga2
+notes:
+    - "Further details here: U(https://www.icinga.com/docs/icinga2/latest/doc/09-object-types/#apiuser)
+      Available permissions are listed here: U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-permissions)"
 '''
 
 EXAMPLES = '''

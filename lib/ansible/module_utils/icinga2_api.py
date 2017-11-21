@@ -64,10 +64,8 @@ class Icinga2APIClassError(Exception):
 
 
 class Icinga2Object:
-    def __init__(self, response_data, status_code):
-        blabb = {
-            "banana": "rama"
-        }
+    def __init__(self, response_data, status_code, changed=True):
+        self.changed = changed
         if (len(response_data["results"]) == 1) & ("code" in response_data["results"][0]):
             self.code = response_data["results"][0]["code"]
             self.results = response_data["results"][0]["status"]
@@ -126,7 +124,7 @@ class Icinga2APIClient:
         try:
             return self.make_api_request(url, "delete", payload)
         except Icinga2APINotFoundError:
-            return Icinga2Object({'results': 'Item already removed'}, 200)
+            return Icinga2Object({'results': 'Item already removed'}, 200, False)
 
     def make_api_request(self, path, request_type, payload=None):
         headers = {

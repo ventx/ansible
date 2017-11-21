@@ -12,37 +12,73 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: icinga2_hostgroup
-short_description: Manage icinga2 hostgroup over API
+module: icinga2_check_command_module
+short_description: Manage icinga2 api listener endpoints over API
 description:
-    - Manages hostgroups in icinga2 via API.
+    - ApiUser objects are used for authentication against the Icinga 2 API U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-authentication).
 version_added: "2.4"
 author:
   - Wolfgang Felbermeier, @f3lang
 requirements: [ "requests" ]
 options:
-  name:
-    description:
-      - The object name of the hostgroup, that should be created 
+  command:
+    type: list
     required: true
-  display_name:
-    description:
-      - A short description of the host group
-  groups:
-    description:
-      - An array of nested group names
-  state:
-    description:
-      - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
-        the hostgroup will be removed, if existent
-    choices: [ "absent", "present" ]
-    required: true
-  cascade_remove:
-    description:
-      - When you remove a hostgroup, delete all depending objects, too 
+    description: 'The command. This can either be an array of individual command arguments. Alternatively a string can be specified in which case the shell interpreter (usually /bin/sh) takes care of parsing the command. When using the “arguments” attribute this must be an array. Can be specified as function for advanced implementations.'
+  env:
+    type: dictionary
+    description: 'A dictionary of macros which should be exported as environment variables prior to executing the command.'
+  vars:
+    type: dictionary
+    description: 'A dictionary containing custom attributes that are specific to this command.'
+  timeout:
+    type: string
+    default: 1m
+    description: 'The command timeout in seconds. Defaults to 1m.'
+  arguments:
+    type: dict
+    description: 'A dictionary of command arguments.'
+    suboptions:
+        suboptions:
+        value:
+          type: null
+          required: true
+          description: 'Optional argument value set by a runtime macro string or a function call.'
+        key:
+          type: string
+          required: true
+          description: 'Optional argument key overriding the key identifier.'
+        description:
+          type: string
+          required: true
+          description: 'Optional argument description.'
+        required:
+          type: bool
+          required: true
+          default: 'false (optional)'
+          description: 'Required argument. Execution error if not set. Defaults to false (optional).'
+        skip_key:
+          type: bool
+          required: true
+          description: 'Use the value as argument and skip the key.'
+        set_if:
+          type: null
+          required: true
+          description: 'Argument is added if the runtime macro string resolves to a defined numeric or boolean value. String values are not supported. Function calls returning a value are supported too.'
+        order:
+          type: int
+          required: true
+          description: 'Set if multiple arguments require a defined argument order.'
+        repeat_key:
+          type: bool
+          required: true
+          default: 'true (repeat)'
+          description: 'If the argument value is an array, repeat the argument key, or not. Defaults to true (repeat).'
 extends_documentation_fragment:
-  - icinga2
-  - icinga2_filter
+    - icinga2
+notes:
+    - "Further details here: U(https://www.icinga.com/docs/icinga2/latest/doc/09-object-types/#apiuser)
+      Available permissions are listed here: U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-permissions)"
 '''
 
 EXAMPLES = '''

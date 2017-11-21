@@ -12,37 +12,115 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: icinga2_hostgroup
-short_description: Manage icinga2 hostgroup over API
+module: icinga2_check_command_module
+short_description: Manage icinga2 api listener endpoints over API
 description:
-    - Manages hostgroups in icinga2 via API.
+    - ApiUser objects are used for authentication against the Icinga 2 API U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-authentication).
 version_added: "2.4"
 author:
   - Wolfgang Felbermeier, @f3lang
 requirements: [ "requests" ]
 options:
-  name:
-    description:
-      - The object name of the hostgroup, that should be created 
-    required: true
   display_name:
-    description:
-      - A short description of the host group
+    type: string
+    description: 'A short description of the host (e.g. displayed by external interfaces instead of the name if set).'
+  address:
+    type: string
+    description: 'The host’s IPv4 address. Available as command runtime macro $address$ if set.'
+  address6:
+    type: string
+    description: 'The host’s IPv6 address. Available as command runtime macro $address6$ if set.'
   groups:
-    description:
-      - An array of nested group names
-  state:
-    description:
-      - If C(present), the hostgroup will be created, if not already existent. If C(absent), 
-        the hostgroup will be removed, if existent
-    choices: [ "absent", "present" ]
+    type: list
+    description: 'A list of host groups this host belongs to.'
+  vars:
+    type: dictionary
+    description: 'A dictionary containing custom attributes that are specific to this host.'
+  check_command:
+    type: string
     required: true
-  cascade_remove:
-    description:
-      - When you remove a hostgroup, delete all depending objects, too 
+    description: 'The name of the check command.'
+  max_check_attempts:
+    type: int
+    default: '3'
+    description: 'The number of times a host is re-checked before changing into a hard state. Defaults to 3.'
+  check_period:
+    type: string
+    description: 'The name of a time period which determines when this host should be checked. Not set by default.'
+  check_timeout:
+    type: string
+    description: 'Check command timeout in seconds. Overrides the CheckCommand’s timeout attribute.'
+  check_interval:
+    type: string
+    default: 5m
+    description: 'The check interval (in seconds). This interval is used for checks when the host is in a HARD state. Defaults to 5m.'
+  retry_interval:
+    type: string
+    default: 1m
+    description: 'The retry interval (in seconds). This interval is used for checks when the host is in a SOFT state. Defaults to 1m.'
+  enable_notifications:
+    type: bool
+    default: 'true'
+    description: 'Whether notifications are enabled. Defaults to true.'
+  enable_active_checks:
+    type: bool
+    default: 'true'
+    description: 'Whether active checks are enabled. Defaults to true.'
+  enable_passive_checks:
+    type: bool
+    default: 'true'
+    description: 'Whether passive checks are enabled. Defaults to true.'
+  enable_event_handler:
+    type: bool
+    default: 'true'
+    description: 'Enables event handlers for this host. Defaults to true.'
+  enable_flapping:
+    type: bool
+    default: 'false'
+    description: 'Whether flap detection is enabled. Defaults to false.'
+  enable_perfdata:
+    type: bool
+    default: 'true'
+    description: 'Whether performance data processing is enabled. Defaults to true.'
+  event_command:
+    type: string
+    description: 'The name of an event command that should be executed every time the host’s state changes or the host is in a SOFT state.'
+  flapping_threshold_high:
+    type: int
+    description: 'Flapping upper bound in percent for a host to be considered flapping. Default 30.0'
+  flapping_threshold_low:
+    type: int
+    description: 'Flapping lower bound in percent for a host to be considered not flapping. Default 25.0'
+  volatile:
+    type: bool
+    default: 'false'
+    description: 'The volatile setting enables always HARD state types if NOT-OK state changes occur. Defaults to false.'
+  zone:
+    type: string
+    description: 'The zone this object is a member of. Please read the distributed monitoring chapter for details.'
+  command_endpoint:
+    type: string
+    description: 'The endpoint where commands are executed on.'
+  notes:
+    type: string
+    description: 'Notes for the host.'
+  notes_url:
+    type: string
+    description: 'URL for notes for the host (for example, in notification commands).'
+  action_url:
+    type: string
+    description: 'URL for actions for the host (for example, an external graphing tool).'
+  icon_image:
+    type: string
+    description: 'Icon image for the host. Used by external interfaces only.'
+  icon_image_alt:
+    type: string
+    description: 'Icon image description for the host. Used by external interface only.'
 extends_documentation_fragment:
-  - icinga2
-  - icinga2_filter
+    - icinga2
+notes:
+    - "Further details here: U(https://www.icinga.com/docs/icinga2/latest/doc/09-object-types/#apiuser)
+      Available permissions are listed here: U(https://www.icinga.com/docs/icinga2/latest/doc/12-icinga2-api/#icinga2-api-permissions)"
 '''
 
 EXAMPLES = '''
