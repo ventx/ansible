@@ -68,6 +68,9 @@ options:
     description:
       - This module allows you to specify the 'file' option directly without any other options.
         There is no 'free-form' option, this is just an indicator, see example below.
+  group_by_filename:
+    description:
+      - If set, the included variables will be grouped by the source filename.
 notes:
   - This module is also supported for Windows targets.
 '''
@@ -101,6 +104,14 @@ EXAMPLES = """
     extensions:
         - json
         - jsn
+
+- name: Include all .json files in vars/all and all nested directories (2.8)
+  include_vars:
+    dir: vars/all
+    extensions:
+        - json
+    group_by_filename: Yes
+# output: {"filename.json": {"var": "value1"}, "filename2.json": {"var": "value2"}} 
 
 - name: Include all default extension files in vars/all and all nested directories and save the output in test. (2.2)
   include_vars:

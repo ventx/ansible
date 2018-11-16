@@ -34,7 +34,7 @@ class ActionModule(ActionBase):
     VALID_FILE_EXTENSIONS = ['yaml', 'yml', 'json']
     VALID_DIR_ARGUMENTS = ['dir', 'depth', 'files_matching', 'ignore_files', 'extensions', 'ignore_unknown_extensions']
     VALID_FILE_ARGUMENTS = ['file', '_raw_params']
-    VALID_ALL = ['name']
+    VALID_ALL = ['name', 'group_by_filename']
 
     def _set_dir_defaults(self):
         if not self.depth:
@@ -61,6 +61,7 @@ class ActionModule(ActionBase):
         """ Set instance variables based on the arguments that were passed """
 
         self.return_results_as_name = self._task.args.get('name', None)
+        self.group_results_by_filename = self._task.args.get('group_by_filename', False)
         self.source_dir = self._task.args.get('dir', None)
         self.source_file = self._task.args.get('file', None)
         if not self.source_dir and not self.source_file:
@@ -279,11 +280,17 @@ class ActionModule(ActionBase):
                     if path.exists(filepath) and not self._ignore_file(filename) and self._is_valid_file_ext(filename):
                         failed, err_msg, loaded_data = self._load_files(filepath, validate_extensions=True)
                         if not failed:
-                            results.update(loaded_data)
+                            if self.group_results_by_filename:
+                                results[filename] = loaded_data
+                            else:
+                                results.update(loaded_data)
                 else:
                     if path.exists(filepath) and not self._ignore_file(filename):
                         failed, err_msg, loaded_data = self._load_files(filepath, validate_extensions=True)
                         if not failed:
-                            results.update(loaded_data)
+                            if self.group_results_by_filename:
+                                results[filename] = loaded_data
+                            else:
+                                results.update(loaded_data)
 
         return failed, err_msg, results
